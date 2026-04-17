@@ -1,0 +1,48 @@
+{
+  "seller": {
+    "name": "SP ATACADISTA DE PAPELARIA LTDA",
+    "cnpj": "37.582.992/0001-12",
+    "address": {
+      "street": "Q CNG 05 - LOTES 5, 6 13 E 14 LOJA 01",
+      "number": "SN",
+      "complement": "NAO INFORMADO",
+      "neighborhood": "TAGUATINGA",
+      "city": "BRASILIA",
+      "state": "DF"
+    }
+  },
+  "items": [
+    {
+      "name": "FITA CREPE TAPEFIX 423 19X10 ADERE - 1X6",
+      "code": "45657",
+      "quantity": 1.0,
+      "unit": "PC",
+      "unit_price": 10.99,
+      "total_price": 10.99,
+      "count": 1
+    }
+  ],
+  "summary": {
+    "total_items": 1,
+    "total_payable": 10.99
+  },
+  "payments": [
+    {
+      "method": "Cartão de Débito",
+      "amount": 10.99
+    }
+  ],
+  "consumer": "not_identified",
+  "invoice": {
+    "emission_type": "normal",
+    "number": 4635,
+    "series": 3,
+    "emission_datetime": "14/02/2026 12:21:10",
+    "protocol": "253260086708158",
+    "protocol_datetime": "14/02/2026 12:21:10",
+    "access_key": "53260237582992000112650030000046351898724254"
+  },
+  "taxes": {
+    "total": 19.26
+  }
+}
