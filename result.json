@@ -1,48 +1,65 @@
 {
   "seller": {
-    "name": "SP ATACADISTA DE PAPELARIA LTDA",
-    "cnpj": "37.582.992/0001-12",
+    "name": "COMERCIO DE DOCES E FESTAS MIAMI LTDA",
+    "cnpj": "28.551.610/0001-00",
     "address": {
-      "street": "Q CNG 05 - LOTES 5, 6 13 E 14 LOJA 01",
-      "number": "SN",
-      "complement": "NAO INFORMADO",
-      "neighborhood": "TAGUATINGA",
+      "street": "CNG 04 LOTE 05",
+      "number": ".",
+      "neighborhood": "TAGUATINGA NORTE",
       "city": "BRASILIA",
       "state": "DF"
     }
   },
   "items": [
     {
-      "name": "FITA CREPE TAPEFIX 423 19X10 ADERE - 1X6",
-      "code": "45657",
+      "name": "BALA MASTIGAVEL SORTIDA 500G",
+      "code": "32825",
       "quantity": 1.0,
       "unit": "PC",
-      "unit_price": 10.99,
-      "total_price": 10.99,
+      "unit_price": 7.99,
+      "total_price": 7.99,
+      "count": 1
+    },
+    {
+      "name": "PIRUL BABY CORACAO COLORIDO 200G",
+      "code": "21466",
+      "quantity": 1.0,
+      "unit": "UN",
+      "unit_price": 6.49,
+      "total_price": 6.49,
+      "count": 1
+    },
+    {
+      "name": "COR. LIQUIDO ROSA SECO 10ML",
+      "code": "21430",
+      "quantity": 1.0,
+      "unit": "UN",
+      "unit_price": 2.49,
+      "total_price": 2.49,
       "count": 1
     }
   ],
   "summary": {
-    "total_items": 1,
-    "total_payable": 10.99
+    "total_items": 3,
+    "total_payable": 16.97
   },
   "payments": [
     {
       "method": "Cartão de Débito",
-      "amount": 10.99
+      "amount": 16.97
     }
   ],
   "consumer": "not_identified",
   "invoice": {
     "emission_type": "normal",
-    "number": 4635,
-    "series": 3,
-    "emission_datetime": "14/02/2026 12:21:10",
-    "protocol": "253260086708158",
-    "protocol_datetime": "14/02/2026 12:21:10",
-    "access_key": "53260237582992000112650030000046351898724254"
+    "number": 122607,
+    "series": 0,
+    "emission_datetime": "14/02/2026 13:21:25",
+    "protocol": "253260086882777",
+    "protocol_datetime": "14/02/2026 13:21:29",
+    "access_key": "53260228551610000100650000001226071001408309"
   },
   "taxes": {
-    "total": 19.26
+    "total": 5.82
   }
 }
