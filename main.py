@@ -21,42 +21,66 @@ class ReceiptRequest(BaseModel):
     receiptId: str
     key: str
     projectUrl: str
+    maxRetries: int = 3
 
 
-def scrape_and_notify(receipt_id: str, key: str, webhook_url: str):
+ERROR_MSG = "Caso o erro persista, favor notificar a área responsável"
+
+
+def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: int = 3):
     base_url = "https://ww1.receita.fazenda.df.gov.br/DecVisualizador/Nfce/Captcha"
     url = f"{base_url}?Chave={key}"
+    print(url)
 
-    try:
-        print("Webhook called, scrape start")
-        content = scrape_content(url)
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Attempt {attempt}/{max_retries}: scrape start")
+            content = scrape_content(url)
 
-        if content:
-            print("Scraping successfull, parsing content")
-            print(content)
-            parsed = parse_nfce(content)
-            payload = {
-                "receiptId": receipt_id,
-                "data": parsed,
-            }
-        else:
-            print("Scraping unsuccessfull, sending error payload")
+            if not content:
+                print(f"Attempt {attempt}: no content retrieved")
+                if attempt == max_retries:
+                    payload = {
+                        "receiptId": receipt_id,
+                        "data": None,
+                        "error": "No content retrieved",
+                    }
+                else:
+                    continue
+
+            elif ERROR_MSG in content:
+                print(f"Attempt {attempt}: error message detected in HTML")
+                if attempt == max_retries:
+                    payload = {
+                        "receiptId": receipt_id,
+                        "data": None,
+                        "error": "SEFAZ error - max retries reached",
+                    }
+                else:
+                    continue
+
+            else:
+                print("Scraping successful, parsing content")
+                parsed = parse_nfce(content)
+                payload = {
+                    "receiptId": receipt_id,
+                    "data": parsed,
+                }
+                break
+
+        except Exception as e:
             payload = {
                 "receiptId": receipt_id,
                 "data": None,
-                "error": "No content retrieved",
+                "error": str(e),
             }
-    except Exception as e:
-        payload = {
-            "receiptId": receipt_id,
-            "data": None,
-            "error": str(e),
-        }
+            if attempt == max_retries:
+                break
 
     try:
         print("Calling webhook")
         print(payload)
-        httpx.post(f"{webhook_url}/api/nfce/webhook", json=payload, timeout=30.0, headers={"X-API-Key": "test-key"})
+        httpx.post(f"{webhook_url}/api/nfce/webhook", json=payload, timeout=30.0, headers={"X-API-Key": "test-key"}, verify=False)
     except Exception as e:
         print(e)
 
@@ -64,6 +88,6 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str):
 @app.post("/api/nfce/receipt")
 def submit_receipt(request: ReceiptRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(
-        scrape_and_notify, request.receiptId, request.key, request.projectUrl
+        scrape_and_notify, request.receiptId, request.key, request.projectUrl, request.maxRetries
     )
     return {"status": "processing", "receiptId": request.receiptId}
