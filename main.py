@@ -1,10 +1,14 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
+import os
 
 from camou import scrape_content
 from nfce_parser import parse_nfce
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -80,7 +84,7 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: 
     try:
         print("Calling webhook")
         print(payload)
-        httpx.post(f"{webhook_url}/api/nfce/webhook", json=payload, timeout=30.0, headers={"X-API-Key": "test-key"}, verify=False)
+        httpx.post(f"{webhook_url}/api/nfce/webhook", json=payload, timeout=30.0, headers={"X-API-Key": os.environ["API_KEY"]}, verify=False)
     except Exception as e:
         print(e)
 
