@@ -1,9 +1,10 @@
-from dotenv import load_dotenv
-from fastapi import FastAPI, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import asyncio
 import httpx
 import os
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from camou import scrape_content
 from nfce_parser import parse_nfce
@@ -31,7 +32,7 @@ class ReceiptRequest(BaseModel):
 ERROR_MSG = "Caso o erro persista, favor notificar a área responsável"
 
 
-def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: int = 3):
+async def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: int = 3):
     base_url = "https://ww1.receita.fazenda.df.gov.br/DecVisualizador/Nfce/Captcha"
     url = f"{base_url}?Chave={key}"
     print(url)
@@ -39,7 +40,7 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: 
     for attempt in range(1, max_retries + 1):
         try:
             print(f"Attempt {attempt}/{max_retries}: scrape start")
-            content = scrape_content(url)
+            content = await scrape_content(url)
 
             if not content:
                 print(f"Attempt {attempt}: no content retrieved")
@@ -90,8 +91,11 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: 
 
 
 @app.post("/api/nfce/receipt")
-def submit_receipt(request: ReceiptRequest, background_tasks: BackgroundTasks):
-    background_tasks.add_task(
-        scrape_and_notify, request.receiptId, request.key, request.projectUrl, request.maxRetries
-    )
+def submit_receipt(request: ReceiptRequest):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    loop.create_task(scrape_and_notify(request.receiptId, request.key, request.projectUrl, request.maxRetries))
     return {"status": "processing", "receiptId": request.receiptId}

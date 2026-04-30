@@ -12,29 +12,28 @@ config = {
 }
 
 
-
-def scrape_content(url):
-    with Camoufox(
+async def scrape_content(url):
+    async with Camoufox(
         config=config,
         os=["windows", "macos", "linux"],
         i_know_what_im_doing=True,
         headless=True
     ) as browser:
-        page = browser.new_page()
-        page.goto(url)
+        page = await browser.new_page()
+        await page.goto(url)
 
         print("Page accessed, waiting to load")
-        page.wait_for_timeout(10 * 1000)
+        await page.wait_for_timeout(10 * 1000)
         locator = page.locator("input[value='Continuar consulta de NFC-e']")
-        locator.wait_for()
-        locator.click()
+        await locator.wait_for()
+        await locator.click()
 
         print("Page accessed, returning content")
-        page.wait_for_timeout(5 * 1000)
+        await page.wait_for_timeout(5 * 1000)
 
         # with open("file.html", "w") as f:
         #     f.writelines(page.content())
 
-        return page.content()
+        return await page.content()
 
         #in ubuntu server: install libasound2t64 and libgtk-3-0
