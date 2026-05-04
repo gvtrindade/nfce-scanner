@@ -1,10 +1,5 @@
-#!/usr/bin/env python3
-"""Parse Brazilian NFC-e HTML and extract structured data as JSON."""
-
-import json
 import re
 from collections import OrderedDict
-from pathlib import Path
 
 from bs4 import BeautifulSoup
 

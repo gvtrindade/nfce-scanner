@@ -4,11 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
 import os
+import logging
 
 from camou import scrape_content
 from nfce_parser import parse_nfce
 
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -31,18 +36,19 @@ class ReceiptRequest(BaseModel):
 ERROR_MSG = "Caso o erro persista, favor notificar a área responsável"
 
 
-def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: int = 3):
+async def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: int = 3):
+    logger.info(f"Starting scrape_and_notify for receipt {receipt_id}")
     base_url = "https://ww1.receita.fazenda.df.gov.br/DecVisualizador/Nfce/Captcha"
     url = f"{base_url}?Chave={key}"
-    print(url)
+    logger.info(f"URL to scrape: {url}")
 
     for attempt in range(1, max_retries + 1):
         try:
-            print(f"Attempt {attempt}/{max_retries}: scrape start")
-            content = scrape_content(url)
+            logger.info(f"Attempt {attempt}/{max_retries}: scrape start")
+            content = await scrape_content(url)
 
             if not content:
-                print(f"Attempt {attempt}: no content retrieved")
+                logger.info(f"Attempt {attempt}: no content retrieved")
                 if attempt == max_retries:
                     payload = {
                         "receiptId": receipt_id,
@@ -53,7 +59,7 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: 
                     continue
 
             elif ERROR_MSG in content:
-                print(f"Attempt {attempt}: error message detected in HTML")
+                logger.info(f"Attempt {attempt}: error message detected in HTML")
                 if attempt == max_retries:
                     payload = {
                         "receiptId": receipt_id,
@@ -64,7 +70,7 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: 
                     continue
 
             else:
-                print("Scraping successful, parsing content")
+                logger.info("Scraping successful, parsing content")
                 parsed = parse_nfce(content)
                 payload = {
                     "receiptId": receipt_id,
@@ -73,6 +79,7 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: 
                 break
 
         except Exception as e:
+            logger.error(f"Exception in attempt {attempt}: {str(e)}")
             payload = {
                 "receiptId": receipt_id,
                 "data": None,
@@ -82,15 +89,15 @@ def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: 
                 break
 
     try:
-        print("Calling webhook")
-        print(payload)
+        logger.info("Calling webhook with payload: {payload}")
         httpx.post(f"{webhook_url}/api/nfce/webhook", json=payload, timeout=30.0, headers={"X-API-Key": os.environ["API_KEY"]}, verify=False)
     except Exception as e:
-        print(e)
+        logger.error(f"Error calling webhook: {str(e)}")
 
 
 @app.post("/api/nfce/receipt")
-def submit_receipt(request: ReceiptRequest, background_tasks: BackgroundTasks):
+async def submit_receipt(request: ReceiptRequest, background_tasks: BackgroundTasks):
+    logger.info(f"Received request for receipt {request.receiptId}")
     background_tasks.add_task(
         scrape_and_notify, request.receiptId, request.key, request.projectUrl, request.maxRetries
     )
