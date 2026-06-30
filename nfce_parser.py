@@ -1,7 +1,10 @@
+import logging
 import re
 from collections import OrderedDict
 
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 def parse_price(text: str) -> float:
@@ -332,37 +335,36 @@ def parse_taxes_from_summary(collapse) -> dict | None:
     return None
 
 
-def parse_nfce(html: str) -> dict:
-    """Parse NFC-e HTML and return structured data."""
+def parse_nfce(html: str) -> dict | None:
+    """Parse NFC-e HTML and return structured data, or None if structure not found."""
     soup = BeautifulSoup(html, "html.parser")
 
-    # Accordion1: seller + items + summary + payments
     accordion1 = soup.find(id="accordion1")
+    if accordion1 is None:
+        logger.warning("Accordion1 not found, HTML structure unexpected")
+        return None
+
     header1 = accordion1.find(id="heading1")
     collapse1 = accordion1.find(id="collapse1")
 
-    seller = parse_seller(header1)
-    items = parse_items(collapse1)
-    summary = parse_summary(collapse1)
-    payments = parse_payments(collapse1)
+    seller = parse_seller(header1) if header1 else OrderedDict()
+    items = parse_items(collapse1) if collapse1 else []
+    summary = parse_summary(collapse1) if collapse1 else OrderedDict()
+    payments = parse_payments(collapse1) if collapse1 else []
 
-    # Accordion2: consumer
     accordion2 = soup.find(id="accordion2")
-    consumer = parse_consumer(accordion2)
+    consumer = parse_consumer(accordion2) if accordion2 else "not_identified"
 
-    # Accordion3: access key
     accordion3 = soup.find(id="accordion3")
-    access_key = parse_access_key(accordion3)
+    access_key = parse_access_key(accordion3) if accordion3 else ""
 
-    # Accordion4: taxes (optional) — also check collapse1 for single tax line
     accordion4 = soup.find(id="accordion4")
     taxes = parse_taxes(accordion4)
-    if taxes is None:
+    if taxes is None and collapse1:
         taxes = parse_taxes_from_summary(collapse1)
 
-    # Accordion6: invoice metadata
     accordion6 = soup.find(id="accordion6")
-    invoice = parse_invoice(accordion6)
+    invoice = parse_invoice(accordion6) if accordion6 else OrderedDict()
     invoice["access_key"] = access_key
 
     result = OrderedDict(

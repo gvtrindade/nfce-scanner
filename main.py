@@ -55,8 +55,8 @@ async def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_ret
                         "data": None,
                         "error": "No content retrieved",
                     }
-                else:
-                    continue
+                    break
+                continue
 
             elif ERROR_MSG in content:
                 logger.info(f"Attempt {attempt}: error message detected in HTML")
@@ -66,12 +66,22 @@ async def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_ret
                         "data": None,
                         "error": "SEFAZ error - max retries reached",
                     }
-                else:
-                    continue
+                    break
+                continue
 
             else:
                 logger.info("Scraping successful, parsing content")
                 parsed = parse_nfce(content)
+                if parsed is None:
+                    logger.info(f"Attempt {attempt}: parser returned None (unexpected HTML)")
+                    if attempt == max_retries:
+                        payload = {
+                            "receiptId": receipt_id,
+                            "data": None,
+                            "error": "Parser returned None - unexpected HTML",
+                        }
+                        break
+                    continue
                 payload = {
                     "receiptId": receipt_id,
                     "data": parsed,
@@ -80,13 +90,14 @@ async def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_ret
 
         except Exception as e:
             logger.error(f"Exception in attempt {attempt}: {str(e)}")
-            payload = {
-                "receiptId": receipt_id,
-                "data": None,
-                "error": str(e),
-            }
             if attempt == max_retries:
+                payload = {
+                    "receiptId": receipt_id,
+                    "data": None,
+                    "error": str(e),
+                }
                 break
+            continue
 
     try:
         logger.info("Calling webhook with payload: {payload}")

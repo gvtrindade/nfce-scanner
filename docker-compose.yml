@@ -4,5 +4,6 @@ services:
     image: nfce-scanner:latest
     ports:
       - '8000:8000'
+    shm_size: 2gb
     environment:
       - API_KEY=${API_KEY}
