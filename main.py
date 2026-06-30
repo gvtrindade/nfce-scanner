@@ -38,14 +38,12 @@ ERROR_MSG = "Caso o erro persista, favor notificar a área responsável"
 
 async def scrape_and_notify(receipt_id: str, key: str, webhook_url: str, max_retries: int = 3):
     logger.info(f"Starting scrape_and_notify for receipt {receipt_id}")
-    base_url = "https://ww1.receita.fazenda.df.gov.br/DecVisualizador/Nfce/Captcha"
-    url = f"{base_url}?Chave={key}"
-    logger.info(f"URL to scrape: {url}")
+    logger.info(f"Key to scrape: {key}")
 
     for attempt in range(1, max_retries + 1):
         try:
             logger.info(f"Attempt {attempt}/{max_retries}: scrape start")
-            content = await scrape_content(url)
+            content = await scrape_content(key)
 
             if not content:
                 logger.info(f"Attempt {attempt}: no content retrieved")

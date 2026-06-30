@@ -7,3 +7,5 @@ services:
     shm_size: 2gb
     environment:
       - API_KEY=${API_KEY}
+      # Uncomment and set PROXY_URL if the server IP triggers captcha:
+      # - PROXY_URL=http://user:pass@proxy:port
