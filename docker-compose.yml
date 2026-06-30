@@ -3,6 +3,6 @@ services:
   nfce-scanner:
     image: nfce-scanner:latest
     ports:
-      - '9090:8000'
+      - '8000:8000'
     environment:
       - API_KEY=${API_KEY}
