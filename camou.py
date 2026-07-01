@@ -1,8 +1,27 @@
 from camoufox import AsyncCamoufox
+from camoufox.virtdisplay import VirtualDisplay
 import logging
 import os
 
 logger = logging.getLogger(__name__)
+
+# Patch Xvfb screen size: default 1x1x24 is a known bot detection signal
+# Real screens are never 1x1 pixel; this causes Cloudflare Turnstile to fail
+VirtualDisplay.xvfb_args = (
+    "-screen", "0", "1920x1080x24",
+    "-ac",
+    "-nolisten", "tcp",
+    "-extension", "RENDER",
+    "+extension", "GLX",
+    "-extension", "COMPOSITE",
+    "-extension", "XVideo",
+    "-extension", "XVideo-MotionCompensation",
+    "-extension", "XINERAMA",
+    "-shmem",
+    "-fp", "built-ins",
+    "-nocursor",
+    "-br",
+)
 
 config = {
     'window.outerHeight': 1056,
@@ -11,7 +30,6 @@ config = {
     'window.innerWidth': 1920,
     'navigator.language': 'pt-BR',
     'navigator.languages': ['pt-BR', 'en-US'],
-    'navigator.platform': 'Win32',
     'navigator.hardwareConcurrency': 12,
 }
 
@@ -80,8 +98,9 @@ async def scrape_content(key: str):
         config=config,
         os=["windows", "macos", "linux"],
         i_know_what_im_doing=True,
-        headless=True,
+        headless="virtual",
         disable_coop=True,
+        humanize=True,
     )
     if proxy:
         launch_kwargs["proxy"] = proxy
