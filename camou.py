@@ -72,8 +72,9 @@ async def _try_captcha(page, url):
         logger.info("Found continue button, clicking...")
 
         # Use real Playwright click to trigger JS event handlers on the form
-        async with page.expect_navigation(timeout=30 * 1000):
-            await locator.click(force=True, timeout=10 * 1000)
+        # no_wait_after=True because same-URL form POST doesn't trigger navigation
+        await locator.click(force=True, no_wait_after=True, timeout=10 * 1000)
+        await page.wait_for_timeout(5 * 1000)
         logger.info(f"Post-click URL: {page.url}")
         content = await _content_or_none(page, "captcha-click")
         if content:
