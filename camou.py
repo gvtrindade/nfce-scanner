@@ -55,17 +55,21 @@ async def _content_or_none(page, label=""):
 
 
 async def _try_captcha(page, url):
-    logger.info(f"Captcha page, current URL: {page.url}")
     await page.wait_for_timeout(5 * 1000)
 
+    content = await page.content()
+    logger.info(f"Content: {content}")
+    
     locator = page.locator("input[value='Continuar consulta de NFC-e']")
     try:
         await locator.wait_for(timeout=20 * 1000)
         logger.info("Found continue button, clicking...")
         await locator.click()
-        await page.wait_for_load_state("networkidle", timeout=20 * 1000)
-        await page.wait_for_timeout(3 * 1000)
-        logger.info(f"Post-click URL: {page.url}")
+
+        content = await page.content()
+        logger.info(f"Content: {content}")
+        
+        await page.wait_for(timeout=20 * 1000)
         content = await _content_or_none(page, "captcha-click")
         if content:
             return content
@@ -111,16 +115,10 @@ async def scrape_content(key: str):
         async with AsyncCamoufox(**launch_kwargs) as browser:
             page = await browser.new_page()
 
-            logger.info(f"Trying URL: {url}")
             try:
                 await page.goto(url, wait_until="domcontentloaded", timeout=30 * 1000)
                 await page.wait_for_timeout(5 * 1000)
-                logger.info(f"Title: {await page.title()}, URL: {page.url}")
-
-                if "Captcha" in page.url or "Captcha" in url:
-                    result = await _try_captcha(page, url)
-                else:
-                    result = await _try_direct(page, url)
+                result = await _try_captcha(page, url)
 
                 if result:
                     logger.info("Got valid content")
@@ -129,7 +127,6 @@ async def scrape_content(key: str):
             except Exception as e:
                 logger.warning(f"URL {url} failed: {e}")
 
-            logger.warning("All URLs exhausted, returning last page content")
             return await page.content()
     except Exception as e:
         logger.error(f"Error in scrape_content: {str(e)}", exc_info=True)
