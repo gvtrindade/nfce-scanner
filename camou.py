@@ -63,13 +63,9 @@ async def _try_captcha(page, url):
     locator = page.locator("input[value='Continuar consulta de NFC-e']")
     try:
         await locator.wait_for(timeout=20 * 1000)
-        logger.info("Found continue button, clicking...")
-        await locator.click()
-
-        content = await page.content()
-        logger.info(f"Content: {content}")
-        
-        await page.wait_for(timeout=20 * 1000)
+        logger.info("Found continue button, clicking via JS...")
+        await locator.evaluate("el => el.click()")
+        await page.wait_for_timeout(5 * 1000)
         content = await _content_or_none(page, "captcha-click")
         if content:
             return content
