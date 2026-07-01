@@ -56,57 +56,31 @@ async def _content_or_none(page, label=""):
 
 async def _try_captcha(page, url):
     logger.info(f"Captcha page, current URL: {page.url}")
-    await page.wait_for_timeout(5 * 1000)
 
-    # Let the page fully settle (Turnstile needs time to init)
+    # Let the page fully settle
     try:
         await page.wait_for_load_state("networkidle", timeout=15 * 1000)
     except Exception:
-        pass  # Page might have long-polling or keep-alive
+        pass
+
+    # Some SEFAZ Captcha pages require time-on-page before accepting submission
+    await page.wait_for_timeout(10 * 1000)
 
     locator = page.locator("input[value='Continuar consulta de NFC-e']")
     try:
         await locator.wait_for(timeout=20 * 1000)
-        logger.info("Found continue button, submitting form...")
+        logger.info("Found continue button, clicking...")
 
-        # Log form details for debugging
-        form_info = await page.evaluate("""
-            () => {
-                const btn = document.querySelector('input[value="Continuar consulta de NFC-e"]');
-                if (!btn) return null;
-                const form = btn.form;
-                return {
-                    formAction: form ? form.action : null,
-                    formMethod: form ? form.method : null,
-                    hasTurnstile: document.querySelector(
-                        '.cf-turnstile, iframe[src*="turnstile"], iframe[src*="challenges"]'
-                    ) !== null,
-                };
-            }
-        """)
-        logger.info(f"Form info: {form_info}")
-
-        # Submit the form natively — bypasses any JS click interceptors
-        await page.evaluate("""
-            const btn = document.querySelector('input[value="Continuar consulta de NFC-e"]');
-            if (btn && btn.form) {
-                btn.form.submit();
-            }
-        """)
-
-        # Wait for the navigation/result
-        try:
-            await page.wait_for_load_state("networkidle", timeout=25 * 1000)
-        except Exception:
-            pass
-        await page.wait_for_timeout(3 * 1000)
-        logger.info(f"Post-submit URL: {page.url}")
+        # Use real Playwright click to trigger JS event handlers on the form
+        async with page.expect_navigation(timeout=30 * 1000):
+            await locator.click(force=True, timeout=10 * 1000)
+        logger.info(f"Post-click URL: {page.url}")
         content = await _content_or_none(page, "captcha-click")
         if content:
             return content
-        logger.info("Form submitted but content too small")
+        logger.info("Click succeeded but content too small")
     except Exception as e:
-        logger.info(f"Continue button not found or submit failed: {e}")
+        logger.info(f"Click or navigation failed: {e}")
         logger.info(f"Post-attempt URL: {page.url}")
 
     logger.info("Trying to get any content from current page")
@@ -135,7 +109,6 @@ async def scrape_content(key: str):
         i_know_what_im_doing=True,
         headless="virtual",
         disable_coop=True,
-        humanize=True,
     )
     if proxy:
         launch_kwargs["proxy"] = proxy
